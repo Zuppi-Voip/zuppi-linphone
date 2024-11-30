@@ -50,7 +50,7 @@ endif()
 set(CMAKE_INSTALL_PREFIX "${APPLICATION_OUTPUT_DIR}")
 
 # Qt6 is required
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui PATHS "C:/msys64/mingw64/lib/cmake/Qt6" NO_DEFAULT_PATH)
 
 if(NOT Qt6_FOUND)
   message(FATAL_ERROR "Qt6 was not found. Ensure Qt6 is installed and Qt6_DIR is set correctly.")
@@ -74,3 +74,4 @@ endfunction()
 add_linphone_app()
 
 include(cmake/install/install.cmake)
+
