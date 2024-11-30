@@ -23,9 +23,9 @@
 cmake_minimum_required(VERSION 3.22)
 
 # Set the path for Qt6 and explicitly add the CMake module path
-set(CMAKE_PREFIX_PATH "C:/msys64/mingw64/lib/cmake/Qt6")
-set(CMAKE_MODULE_PATH "C:/msys64/mingw64/lib/cmake/Qt6")
-set(Qt6_DIR "C:/msys64/mingw64/lib/cmake/Qt6") # Explicitly set Qt6_DIR
+set(CMAKE_PREFIX_PATH "/mingw64/lib/cmake/Qt6")
+set(CMAKE_MODULE_PATH "/mingw64/lib/cmake/Qt6")
+set(Qt6_DIR "/mingw64/lib/cmake/Qt6") # Explicitly set Qt6_DIR
 
 # Debugging: Print paths
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
@@ -50,7 +50,7 @@ endif()
 set(CMAKE_INSTALL_PREFIX "${APPLICATION_OUTPUT_DIR}")
 
 # Qt6 is required
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui PATHS "C:/msys64/mingw64/lib/cmake/Qt6" NO_DEFAULT_PATH)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
 
 if(NOT Qt6_FOUND)
   message(FATAL_ERROR "Qt6 was not found. Ensure Qt6 is installed and Qt6_DIR is set correctly.")
@@ -74,4 +74,3 @@ endfunction()
 add_linphone_app()
 
 include(cmake/install/install.cmake)
-
