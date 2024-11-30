@@ -49,8 +49,8 @@ endif()
 
 set(CMAKE_INSTALL_PREFIX "${APPLICATION_OUTPUT_DIR}")
 
-# Qt6 is required
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
+# Force find_package to search explicitly in the Qt6 directory
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui HINTS "/mingw64/lib/cmake/Qt6")
 
 if(NOT Qt6_FOUND)
   message(FATAL_ERROR "Qt6 was not found. Ensure Qt6 is installed and Qt6_DIR is set correctly.")
