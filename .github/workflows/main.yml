@@ -28,18 +28,19 @@ jobs:
         # Install required toolchains and Qt6 packages
         C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
 
-    - name: Verify Installation
+    - name: Verify MSYS2 and Qt6 Installation
       run: |
-        # Verify cmake installation
+        # Verify CMake installation
         cmake --version || echo "CMake not found in system PATH"
+        # Verify Qt6 directory and configuration files
         C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake/Qt6 || echo 'Qt6 not found'"
-        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/bin || echo 'Binaries not found in /mingw64/bin'"
+        C:\msys64\usr\bin\bash.exe -l -c "cat /mingw64/lib/cmake/Qt6/Qt6Config.cmake || echo 'Qt6Config.cmake not found'"
 
     - name: Configure Build with CMake
       run: |
         mkdir build
         cd build
-        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=C:/msys64/mingw64/lib/cmake/Qt6
+        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/mingw64/lib/cmake/Qt6 -DQt6_DIR=/mingw64/lib/cmake/Qt6
 
     - name: Build Executable
       run: |
