@@ -23,24 +23,23 @@ jobs:
         # Update MSYS2 packages
         C:\msys64\usr\bin\bash.exe -l -c "pacman -Syu --noconfirm"
 
-    - name: Install Dependencies
+    - name: Clean MSYS2 Environment
       run: |
-        # Install required toolchains and Qt6 packages
-        C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
-
-    - name: Debug Qt6 Installation
-      run: |
-        echo "Checking for Qt6 installation:"
-        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake || echo '/mingw64/lib/cmake not found'"
-        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake/Qt6 || echo '/mingw64/lib/cmake/Qt6 not found'"
-        C:\msys64\usr\bin\bash.exe -l -c "cat /mingw64/lib/cmake/Qt6/Qt6Config.cmake || echo 'Qt6Config.cmake not found'"
-        echo "Listing all installed packages:"
-        C:\msys64\usr\bin\bash.exe -l -c "pacman -Qe"
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -Rns --noconfirm mingw-w64-x86_64-qt6* || echo 'No Qt6 packages installed'"
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -Scc --noconfirm || echo 'Cache cleanup failed'"
 
     - name: Reinstall Qt6 Packages
       run: |
-        C:\msys64\usr\bin\bash.exe -l -c "pacman -Rns --noconfirm mingw-w64-x86_64-qt6*"
-        C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -Syu --noconfirm"
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
+
+    - name: Debug Qt6 Installation
+      run: |
+        echo "Checking for Qt6Config.cmake:"
+        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake/Qt6 || echo '/mingw64/lib/cmake/Qt6 not found'"
+        C:\msys64\usr\bin\bash.exe -l -c "cat /mingw64/lib/cmake/Qt6/Qt6Config.cmake || echo 'Qt6Config.cmake not found'"
+        echo "Listing all installed Qt6 packages:"
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -Qe | grep qt6 || echo 'No Qt6 packages installed'"
 
     - name: Configure Build with CMake
       run: |
