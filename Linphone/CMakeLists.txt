@@ -1,199 +1,164 @@
-cmake_minimum_required(VERSION 3.16)
+################################################################################
+#
+#  Copyright (c) 2010-2024 Belledonne Communications SARL.
+# 
+#  This file is part of linphone-desktop
+#  (see https://www.zuppi.site).
+# 
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+# 
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+# 
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+################################################################################
 
-project(Zuppi VERSION 6.0.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.22)
 
-################################################################
-#						PACKAGES
-################################################################
-set(LINPHONE_PACKAGES Mediastreamer2 ZuppiCxx BCToolbox LibZuppi)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
-foreach(PACKAGE ${LINPHONE_PACKAGES})
-	message(STATUS "Trying to find ${PACKAGE}")
-	find_package(${PACKAGE} REQUIRED)
-	if(NOT ${PACKAGE}_FOUND)
-		find_package(${PACKAGE} CONFIG REQUIRED)
+# Set the correct path for Qt6
+set(CMAKE_PREFIX_PATH "C:/msys64/mingw64/lib/cmake/Qt6")
+
+# Debugging: Print CMAKE_PREFIX_PATH to ensure it's being used correctly
+message(STATUS "Using CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+
+get_cmake_property(vars CACHE_VARIABLES)
+foreach(var ${vars})
+	get_property(currentHelpString CACHE "${var}" PROPERTY HELPSTRING)
+	if("${currentHelpString}" MATCHES "No help, variable specified on the command line." OR "${currentHelpString}" STREQUAL "")
+		list(APPEND USER_ARGS "-D${var}=${${var}}")
+		if( "${var}" STREQUAL "CMAKE_PREFIX_PATH")
+			set(PREFIX_PATH ";${${var}}")
+		endif()
+	elseif("${var}" STREQUAL "CMAKE_GENERATOR_PLATFORM" AND NOT("${${var}}" STREQUAL ""))
+		message(STATUS "User-Setting Platform to ${${var}}")
 	endif()
 endforeach()
-
-
-set(TARGET_NAME Zuppi)
-set(APP_TARGETS ${ZuppiCxx_TARGET}
-				${Mediastreamer2_TARGET}#MediastreamerUtils
-				${LibZuppi_TARGET})#MediastreamerUtils
-
-set(QT_DEFAULT_MAJOR_VERSION 6)
-set(QT_PACKAGES Core Quick Qml Widgets Svg Multimedia Test NetworkAuth Concurrent)# Search Core at first for initialize Qt scripts for next find_packages.
-if (UNIX AND NOT APPLE)
-	list(APPEND QT_PACKAGES DBus)
-endif()
-find_package(Qt6 REQUIRED COMPONENTS Core)	
-find_package(Qt6 REQUIRED COMPONENTS ${QT_PACKAGES})
-
-if(NOT WIN32)
-	find_package(X11)
+if(ENABLE_BUILD_VERBOSE)
+	message("User Args : ${USER_ARGS}")
 endif()
 
-if(X11_FOUND)
-	list(APPEND APP_TARGETS X11::X11)
+if(POLICY CMP0149)
+    cmake_policy(SET CMP0149 NEW)
 endif()
 
-################################################################
-#						CONFIGS
-################################################################
-if(NOT WIN32)
-	add_compile_options(-Werror=deprecated-declarations)
-endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -DQT_NO_DEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DQT_QML_DEBUG -DQT_DECLARATIVE_DEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DQT_QML_DEBUG -DQT_DECLARATIVE_DEBUG" )
-set(CMAKE_INCLUDE_CURRENT_DIR ON)#useful for config.h
-
-if(NOT LINPHONEAPP_VERSION)
-	bc_compute_full_version(LINPHONEAPP_VERSION)
+if(POLICY CMP0141)
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+    cmake_policy(SET CMP0141 NEW)
 endif()
 
-set(LINPHONE_MAJOR_VERSION)
-set(LINPHONE_MINOR_VERSION)
-set(LINPHONE_MICRO_VERSION)
-set(LINPHONE_BRANCH_VERSION)
-bc_parse_full_version(${LINPHONEAPP_VERSION} LINPHONE_MAJOR_VERSION LINPHONE_MINOR_VERSION LINPHONE_MICRO_VERSION LINPHONE_BRANCH_VERSION)
+project(linphoneqt)
 
-set(LINPHONEAPP_SHORT_VERSION "${LINPHONE_MAJOR_VERSION}.${LINPHONE_MINOR_VERSION}.${LINPHONE_MICRO_VERSION}")
+# Include necessary directories
+include(GNUInstallDirs)
+include(CheckCXXCompilerFlag)
+include(Linphone/application_info.cmake)
 
-set(GIT_BRANCH_NAME)
-execute_process(
-    COMMAND git name-rev --name-only HEAD
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_BRANCH_NAME
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+set(CMAKE_CXX_STANDARD 17)
 
-set(LINPHONESDK_VERSION)
-execute_process(
-    COMMAND git describe
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/external/linphone-sdk
-    OUTPUT_VARIABLE LINPHONESDK_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-include(application_info.cmake)
-string(TIMESTAMP CURRENT_YEAR "%Y")
-if(NOT APPLICATION_START_LICENCE OR "${CURRENT_YEAR}" STREQUAL "${APPLICATION_START_LICENCE}")
-	set(COPYRIGHT_RANGE_DATE "${APPLICATION_START_LICENCE}")
+if(LINPHONEAPP_INSTALL_PREFIX)
+	set(APPLICATION_OUTPUT_DIR "${LINPHONEAPP_INSTALL_PREFIX}")
 else()
-	set(COPYRIGHT_RANGE_DATE "${APPLICATION_START_LICENCE}-${CURRENT_YEAR}")
+	set(APPLICATION_OUTPUT_DIR "${CMAKE_BINARY_DIR}/OUTPUT")
 endif()
 
+set(CMAKE_INSTALL_PREFIX "${APPLICATION_OUTPUT_DIR}")
 
-if(MEDIASTREAMER2_PLUGINS_LOCATION)
-	set(MSPLUGINS_DIR ${MEDIASTREAMER2_PLUGINS_LOCATION})
-elseif(APPLE)
-	set(MSPLUGINS_DIR "Frameworks/mediastreamer2.framework/Versions/A/Libraries")
-else()
-	set(MSPLUGINS_DIR "${CMAKE_INSTALL_LIBDIR}/mediastreamer/plugins")
-endif()
+if( APPLE )
+	set(LINPHONEAPP_MACOS_ARCHS "arm64" CACHE STRING "MacOS architectures to build: comma-separated list of values in [arm64, x86_64]")
+	set(LINPHONESDK_BUILD_TYPE "Default")
+	set(ENABLE_FAT_BINARY "ON")
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake" "${CMAKE_CURRENT_BINARY_DIR}/config.h")
+	set(CMAKE_INSTALL_BINDIR "${APPLICATION_NAME}.app/Contents/MacOS")
+	set(CMAKE_INSTALL_LIBDIR "${APPLICATION_NAME}.app/Contents/Frameworks")
+	set(CMAKE_INSTALL_INCLUDEDIR "${APPLICATION_NAME}.app/Contents/Resources/include")
+	set(CMAKE_INSTALL_DATAROOTDIR "${APPLICATION_NAME}.app/Contents/Resources/share")
 
-if(${Qt6_VERSION} VERSION_LESS "6.3.0")
-	set(CMAKE_AUTOMOC ON)
-	set(CMAKE_AUTORCC ON)
-	set(CMAKE_AUTOUIC ON)
-else()
-	qt6_standard_project_setup()
-endif()
-
-
-
-
-################################################################
-#						SOURCES
-################################################################
-
-
-set(_LINPHONEAPP_SOURCES main.cpp)
-set(_LINPHONEAPP_QML_FILES)
-set(_LINPHONEAPP_RC_FILES)
-set(_LINPHONEAPP_QML_SINGLETONS)
-
-add_subdirectory(data)
-add_subdirectory(tool)
-add_subdirectory(model)
-add_subdirectory(view)
-add_subdirectory(core)
-
-# set application details
-if(WIN32)
-	configure_file("${CMAKE_SOURCE_DIR}/cmake/install/windows/appDetailsWindows.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/appDetailsWindows.rc")
-	set(_APPDETAILS_RC_FILE ${CMAKE_CURRENT_BINARY_DIR}/appDetailsWindows.rc)
-endif()
-
-#fonts.qrc is in data and not in data/font because we want to use 'font' in path and not in prefix.
-#TODO make prefix working
-set(_LINPHONEAPP_FONTS_FILES)
-qt6_add_big_resources(_LINPHONEAPP_FONTS_FILES data/fonts.qrc)
-
- # Have big_resource.qrc treated as a source file by Qt Creator
-list(APPEND _LINPHONEAPP_FONTS_FILES data/fonts.qrc)
-set_property(SOURCE data/fonts.qrc PROPERTY SKIP_AUTORCC ON)
-
-qt6_add_executable(Zuppi
-	${_LINPHONEAPP_SOURCES}
-	${_LINPHONEAPP_FONTS_FILES}
-	${_APPDETAILS_RC_FILE}
-)
-
-set_source_files_properties(${_LINPHONEAPP_QML_SINGLETONS} PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
-
-qt_policy(SET QTP0001 NEW)
-qt6_add_qml_module(Zuppi
-    URI Zuppi
-    VERSION 1.0
-    QML_FILES ${_LINPHONEAPP_QML_FILES} ${_LINPHONEAPP_QML_SINGLETONS}
-    RESOURCES data/fonts.qrc
-)
-
-qt6_add_resources(Zuppi "resources" PREFIX "/" FILES ${_LINPHONEAPP_RC_FILES})
-
-
-################################################################
-#						TARGETS LINKS
-################################################################
-
-set_target_properties(${TARGET_NAME} PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER org.linphone
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_BINARY_DIR}/cmake/install/macos/Info.plist
-    WIN32_EXECUTABLE TRUE
-    OUTPUT_NAME "${EXECUTABLE_NAME}"
-# Added for Qt to set the correct path on run configurations.
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}"
-)
-if(MSVC)
-	set_target_properties(${TARGET_NAME} PROPERTIES PDB_NAME "${EXECUTABLE_NAME}_app")
-endif()
-
-if(WIN32)
-	if(ENABLE_SCREENSHARING)
-		target_link_libraries(${TARGET_NAME} PUBLIC Dwmapi)
+	if( NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+		set(CMAKE_OSX_DEPLOYMENT_TARGET "12.3")
 	endif()
-elseif (APPLE)
-	target_link_libraries(${TARGET_NAME} PUBLIC "-framework Cocoa" "-framework IOKit" "-framework AVFoundation" "-framework ScreenCaptureKit")
+	set(LINPHONESDK_MACOS_ARCHS ${LINPHONEAPP_MACOS_ARCHS})
+	set(CMAKE_OSX_ARCHITECTURES ${LINPHONESDK_MACOS_ARCHS} CACHE STRING "")
+elseif(WIN32)
+    set(LINPHONESDK_BUILD_TYPE "Default")
+else()
 endif()
 
+if(NOT LINPHONE_OUTPUT_DIR)
+	set(LINPHONE_OUTPUT_DIR "${CMAKE_INSTALL_PREFIX}")
+endif()
 
-foreach(T ${APP_TARGETS})
-	target_include_directories(${TARGET_NAME} SYSTEM PUBLIC  $<TARGET_PROPERTY:${T},INTERFACE_INCLUDE_DIRECTORIES>)
-	target_link_libraries(${TARGET_NAME} PUBLIC ${T})
-endforeach()
+if( NOT QTKEYCHAIN_OUTPUT_DIR)
+	set(QTKEYCHAIN_OUTPUT_DIR "${CMAKE_INSTALL_PREFIX}")
+endif()
 
-foreach(T ${QT_PACKAGES})
-	target_link_libraries(${TARGET_NAME} PRIVATE Qt6::${T})
-endforeach()
+if (POLICY CMP0071)
+    cmake_policy(SET CMP0071 NEW)
+endif()
 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+	set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/OUTPUT" CACHE PATH "Default linphone-app installation prefix" FORCE)
+	set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT FALSE)
+endif()
 
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+	message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified")
+	set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo" FORCE)
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
+endif()
+
+# ------------------------------------------------------------------------------
+#				SET OPTIONS
+# ------------------------------------------------------------------------------
+set(OPTION_LIST "")
+function(add_option _OPTION_LIST OPTION DESC VALUE)
+	option(${OPTION} ${DESC} ${VALUE})
+	list(APPEND _OPTION_LIST ${${_OPTION_LIST}} "-D${OPTION}=${${OPTION}}")
+	set(${${_OPTION_LIST}} ${_OPTION_LIST} PARENT_SCOPE)
+endfunction()
+
+function(add_cache _OPTION_LIST OPTION DESC VALUE)
+	set(${OPTION} ${VALUE} CACHE STRING ${DESC})
+	list(APPEND _OPTION_LIST ${${_OPTION_LIST}} "-D${OPTION}=${${OPTION}}")
+	set(${${_OPTION_LIST}} ${_OPTION_LIST} PARENT_SCOPE)
+endfunction()
+
+set(LINPHONEAPP_APPLICATION_NAME "Zuppi6" CACHE STRING "Application name" )
+set(LINPHONEAPP_EXECUTABLE_NAME "linphone6" CACHE STRING "Executable name" )
+
+# Qt6 is required
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
+
+if(NOT Qt6_FOUND)
+	message(FATAL_ERROR "Qt6 was not found. Make sure Qt6 is installed and CMAKE_PREFIX_PATH is set correctly.")
+endif()
+
+# Debugging: Confirm found components
+message(STATUS "Qt6 Components Found: Core, Widgets, Gui")
+
+set(LINPHONEAPP_BUILD_TYPE "Default" CACHE STRING "Type of build")
+set_property(CACHE LINPHONEAPP_BUILD_TYPE PROPERTY STRINGS "Default" "Macos" "Normal")
+
+if(LINPHONEAPP_BUILD_TYPE STREQUAL "Default")
+    if(APPLE)
+        set(LINPHONEAPP_BUILD_TYPE "Macos")
+    else()
+        set(LINPHONEAPP_BUILD_TYPE "Normal")
+    endif()
+endif()
+
+add_custom_target(linphone-deps)
+
+function(add_linphone_app)
+	set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+	add_subdirectory("Zuppi")
+endfunction()
+add_linphone_app()
+
+include(cmake/install/install.cmake)
