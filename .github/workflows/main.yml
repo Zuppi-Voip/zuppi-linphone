@@ -16,40 +16,35 @@ jobs:
     - name: Checkout Source Code
       uses: actions/checkout@v3
 
-    - name: Set Up MSYS2
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        install: >-
-          mingw-w64-x86_64-toolchain
-          base-devel
-          cmake
-          mingw-w64-x86_64-qt6
-          mingw-w64-x86_64-qt6-base
-          mingw-w64-x86_64-qt6-tools
-          mingw-w64-x86_64-qt6-declarative
-          mingw-w64-x86_64-qt6-svg
-          mingw-w64-x86_64-qt6-multimedia
+    - name: Install MSYS2
+      run: |
+        # Install MSYS2
+        choco install msys2 -y
+        # Initialize MSYS2
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -Syu --noconfirm"
+
+    - name: Install Dependencies
+      run: |
+        # Install required toolchains and Qt6 packages
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
 
     - name: Debug MSYS2 Environment
       run: |
-        echo "MSYS2 Root Directory:"
-        ls /mingw64/lib/cmake
-        echo "Qt6 Config Directory:"
-        ls /mingw64/lib/cmake/Qt6
-        echo "Checking Qt6Config.cmake:"
-        cat /mingw64/lib/cmake/Qt6/Qt6Config.cmake || echo "Qt6Config.cmake not found"
+        # Verify MSYS2 directories
+        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake"
+        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake/Qt6"
+        C:\msys64\usr\bin\bash.exe -l -c "cat /mingw64/lib/cmake/Qt6/Qt6Config.cmake || echo 'Qt6Config.cmake not found'"
 
     - name: Configure Build with CMake
       run: |
         mkdir build
         cd build
-        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=/mingw64/lib/cmake/Qt6
+        C:\msys64\usr\bin\bash.exe -l -c "cmake .. -G 'MinGW Makefiles' -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=/mingw64/lib/cmake/Qt6"
 
     - name: Build Executable
       run: |
         cd build
-        mingw32-make
+        C:\msys64\usr\bin\bash.exe -l -c "mingw32-make"
 
     - name: Upload EXE as Artifact
       uses: actions/upload-artifact@v3
