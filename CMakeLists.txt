@@ -60,7 +60,7 @@ project(linphoneqt)
 
 include(GNUInstallDirs)
 include(CheckCXXCompilerFlag)
-include(Zuppi/application_info.cmake)
+include(Linphone/application_info.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 if(LINPHONEAPP_INSTALL_PREFIX)
