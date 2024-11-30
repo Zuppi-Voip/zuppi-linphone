@@ -74,3 +74,4 @@ endfunction()
 add_linphone_app()
 
 include(cmake/install/install.cmake)
+
