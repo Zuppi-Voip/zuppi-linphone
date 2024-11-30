@@ -16,29 +16,30 @@ jobs:
     - name: Checkout Source Code
       uses: actions/checkout@v3
 
-    - name: Install MSYS2
+    - name: Install CMake and MSYS2
       run: |
-        # Install MSYS2 using Chocolatey
-        choco install msys2 -y
+        # Install CMake and MSYS2
+        choco install cmake msys2 -y
         # Update MSYS2 packages
         C:\msys64\usr\bin\bash.exe -l -c "pacman -Syu --noconfirm"
 
     - name: Install Dependencies
       run: |
-        # Install required toolchains, cmake, and Qt6 packages
-        C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
+        # Install required toolchains and Qt6 packages
+        C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
 
     - name: Verify Installation
       run: |
-        # Check if cmake and Qt6Config.cmake are installed
-        C:\msys64\usr\bin\bash.exe -l -c "cmake --version || echo 'CMake not found'"
+        # Verify cmake installation
+        cmake --version || echo "CMake not found in system PATH"
         C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake/Qt6 || echo 'Qt6 not found'"
+        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/bin || echo 'Binaries not found in /mingw64/bin'"
 
     - name: Configure Build with CMake
       run: |
         mkdir build
         cd build
-        C:\msys64\usr\bin\bash.exe -l -c "cmake .. -G 'MinGW Makefiles' -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=/mingw64/lib/cmake/Qt6"
+        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DQt6_DIR=C:/msys64/mingw64/lib/cmake/Qt6
 
     - name: Build Executable
       run: |
