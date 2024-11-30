@@ -18,22 +18,21 @@ jobs:
 
     - name: Install MSYS2
       run: |
-        # Install MSYS2
+        # Install MSYS2 using Chocolatey
         choco install msys2 -y
-        # Initialize MSYS2
+        # Update MSYS2 packages
         C:\msys64\usr\bin\bash.exe -l -c "pacman -Syu --noconfirm"
 
     - name: Install Dependencies
       run: |
-        # Install required toolchains and Qt6 packages
+        # Install required toolchains, cmake, and Qt6 packages
         C:\msys64\usr\bin\bash.exe -l -c "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-qt6 mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-multimedia"
 
-    - name: Debug MSYS2 Environment
+    - name: Verify Installation
       run: |
-        # Verify MSYS2 directories
-        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake"
-        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake/Qt6"
-        C:\msys64\usr\bin\bash.exe -l -c "cat /mingw64/lib/cmake/Qt6/Qt6Config.cmake || echo 'Qt6Config.cmake not found'"
+        # Check if cmake and Qt6Config.cmake are installed
+        C:\msys64\usr\bin\bash.exe -l -c "cmake --version || echo 'CMake not found'"
+        C:\msys64\usr\bin\bash.exe -l -c "ls /mingw64/lib/cmake/Qt6 || echo 'Qt6 not found'"
 
     - name: Configure Build with CMake
       run: |
