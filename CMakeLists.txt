@@ -22,6 +22,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
+set(CMAKE_PREFIX_PATH "C:/msys64/mingw64/lib/cmake/Qt6")
 
 get_cmake_property(vars CACHE_VARIABLES)
 foreach(var ${vars})
